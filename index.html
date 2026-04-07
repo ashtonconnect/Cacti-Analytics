@@ -670,6 +670,61 @@
   .footer-copy { font-size: 11px; color: rgba(138,122,96,0.5); letter-spacing: 0.04em; }
   .footer-tagline { font-size: 11px; color: rgba(138,122,96,0.5); letter-spacing: 0.08em; }
 
+  /* ── MARQUEE BAR ──────────────────────────────────────────────────────── */
+  #marquee-bar {
+    background: var(--amber);
+    padding: 13px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+  }
+  #marquee-bar::before,
+  #marquee-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 80px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  #marquee-bar::before {
+    left: 0;
+    background: linear-gradient(to right, var(--amber), transparent);
+  }
+  #marquee-bar::after {
+    right: 0;
+    background: linear-gradient(to left, var(--amber), transparent);
+  }
+  .marquee-track {
+    display: inline-flex;
+    animation: marquee-scroll 28s linear infinite;
+    gap: 0;
+  }
+  .marquee-track:hover { animation-play-state: paused; }
+  @keyframes marquee-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    padding: 0 36px;
+    white-space: nowrap;
+  }
+  .marquee-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    flex-shrink: 0;
+  }
+
   /* ── HAMBURGER BUTTON ─────────────────────────────────────────────────── */
   .nav-hamburger {
     display: none;
@@ -926,6 +981,34 @@
     </div>
   </div>
 </section>
+
+<!-- MARQUEE BAR -->
+<div id="marquee-bar" aria-hidden="true">
+  <div class="marquee-track">
+    <!-- First set -->
+    <span class="marquee-item">Spend Categorization <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Vendor Benchmarking <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Live Power BI Dashboards <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Contract Renegotiation <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Savings Identification <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Supplier Scorecards <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Monthly Intelligence Reports <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Fractional CPO Services <span class="marquee-dot"></span></span>
+    <span class="marquee-item">RFP &amp; Sourcing Strategy <span class="marquee-dot"></span></span>
+    <span class="marquee-item">ROI Tracking <span class="marquee-dot"></span></span>
+    <!-- Duplicate set for seamless loop -->
+    <span class="marquee-item">Spend Categorization <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Vendor Benchmarking <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Live Power BI Dashboards <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Contract Renegotiation <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Savings Identification <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Supplier Scorecards <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Monthly Intelligence Reports <span class="marquee-dot"></span></span>
+    <span class="marquee-item">Fractional CPO Services <span class="marquee-dot"></span></span>
+    <span class="marquee-item">RFP &amp; Sourcing Strategy <span class="marquee-dot"></span></span>
+    <span class="marquee-item">ROI Tracking <span class="marquee-dot"></span></span>
+  </div>
+</div>
 
 <!-- PROOF BAR -->
 <section id="proof-bar">
@@ -1234,7 +1317,7 @@
         <div class="footer-col-title">Contact</div>
         <div class="footer-links">
           <a href="https://calendly.com/hello-cactianalytics/discovery-call" target="_blank">Book a Call</a>
-          <a href="/cdn-cgi/l/email-protection#80e8e5ececefc0e3e1e3f4e9e1eee1ecf9f4e9e3f3aee3efed"><span class="__cf_email__" data-cfemail="e189848d8d8ea18280829588808f808d9895888292cf828e8c">[email&#160;protected]</span></a>
+          <a href="mailto:hello@cactianalytics.com">hello@cactianalytics.com</a>
           <a href="https://www.linkedin.com/company/cactianalytics" target="_blank">LinkedIn</a>
           <a href="#">Phoenix, AZ</a>
         </div>
