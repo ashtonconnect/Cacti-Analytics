@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why I Started Cacti Analytics - Field Notes</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect fill='%23C86B18' x='31' y='6' width='18' height='68' rx='5'/%3E%3Crect fill='%23C86B18' x='5' y='26' width='15' height='48' rx='4'/%3E%3Crect fill='%23C86B18' x='18' y='26' width='15' height='14'/%3E%3Crect fill='%23C86B18' x='60' y='36' width='15' height='38' rx='4'/%3E%3Crect fill='%23C86B18' x='47' y='36' width='15' height='14'/%3E%3C/svg%3E">
+  <style>
+    @import url('https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.18/700.css');
+    @import url('https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.18/800.css');
+    @import url('https://cdn.jsdelivr.net/npm/@fontsource/dm-sans@5.0.18/400.css');
+    @import url('https://cdn.jsdelivr.net/npm/@fontsource/dm-sans@5.0.18/500.css');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber:       #C86B18;
+      --amber-glow:  #E07C22;
+      --amber-dim:   #8A4A10;
+      --obsidian:    #0D0C09;
+      --charcoal:    #181510;
+      --charcoal-2:  #221F18;
+      --charcoal-3:  #2C2820;
+      --adobe:       #8A7A60;
+      --adobe-light: #B0A088;
+      --parchment:   #FAF7F2;
+      --border-dark: rgba(255,255,255,0.07);
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', 'Helvetica Neue', Helvetica, sans-serif;
+      background: var(--obsidian);
+      color: var(--parchment);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,12,9,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-dark);
+      padding: 0 40px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-text { display: flex; flex-direction: column; gap: 2px; }
+    .nav-logo-cacti { font-family: 'Helvetica Neue', Helvetica, sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.1em; color: #F2EDE4; line-height: 1; }
+    .nav-logo-analytics { font-family: 'Helvetica Neue', Helvetica, sans-serif; font-weight: 300; font-size: 7.5px; letter-spacing: 0.36em; color: var(--adobe); line-height: 1; }
+    .nav-links { display: flex; align-items: center; gap: 36px; }
+    .nav-links a { font-size: 13px; color: var(--adobe-light); text-decoration: none; letter-spacing: 0.02em; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--parchment); }
+    .nav-links a.active { color: var(--amber); }
+    .btn-primary-nav { background: var(--amber); color: #fff !important; padding: 9px 20px; font-size: 13px !important; letter-spacing: 0.04em; transition: background 0.2s; }
+    .btn-primary-nav:hover { background: var(--amber-glow) !important; }
+    .nav-hamburger { display: none; flex-direction: column; justify-content: center; gap: 5px; background: none; border: none; cursor: pointer; padding: 6px; }
+    .nav-hamburger span { display: block; width: 22px; height: 2px; background: var(--parchment); border-radius: 2px; transition: transform 0.3s ease, opacity 0.3s ease; }
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* LAYOUT */
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 40px; }
+    .post-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 80px;
+      padding: 72px 0 100px;
+      align-items: start;
+    }
+
+    /* POST HEADER */
+    .post-header { padding: 72px 0 0; border-bottom: 1px solid var(--border-dark); position: relative; overflow: hidden; }
+    .post-header-geo { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .phg-ring { position: absolute; border-radius: 50%; border: 1px solid rgba(200,107,24,0.08); }
+    .phg-ring-1 { width: 500px; height: 500px; top: -280px; right: -150px; }
+    .phg-ring-2 { width: 320px; height: 320px; top: -140px; right: 50px; border-color: rgba(200,107,24,0.05); }
+    .phg-dots { position: absolute; top: 0; right: 350px; bottom: 0; width: 180px; background-image: radial-gradient(circle, rgba(200,107,24,0.14) 1px, transparent 1px); background-size: 18px 18px; mask-image: linear-gradient(to right, transparent, black 40%, black 60%, transparent); opacity: 0.5; }
+
+    .post-breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .post-breadcrumb a { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--adobe); text-decoration: none; transition: color 0.2s; }
+    .post-breadcrumb a:hover { color: var(--amber); }
+    .post-breadcrumb-sep { font-size: 10px; color: rgba(138,122,96,0.4); }
+    .post-breadcrumb-current { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--adobe-light); }
+
+    .post-category { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+    .post-cat-tag { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #fff; background: var(--amber); padding: 3px 10px; border-radius: 2px; }
+    .post-cat-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--adobe); }
+    .post-cat-date { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--adobe); letter-spacing: 0.06em; }
+
+    .post-title { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: clamp(36px, 5.5vw, 64px); line-height: 1.0; letter-spacing: -0.03em; color: #F2EDE4; margin-bottom: 24px; }
+    .post-title .amber { color: var(--amber); }
+
+    .post-byline { display: flex; align-items: center; gap: 16px; padding: 24px 0; border-top: 1px solid var(--border-dark); }
+    .post-author-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--charcoal-3); border: 1px solid rgba(200,107,24,0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .post-author-info { flex: 1; }
+    .post-author-name { font-size: 13px; font-weight: 500; color: #F2EDE4; line-height: 1.3; }
+    .post-author-title { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--adobe); letter-spacing: 0.06em; }
+    .post-read-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--adobe); letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 12px; border: 1px solid var(--border-dark); border-radius: 2px; }
+
+    /* ARTICLE BODY */
+    .post-body { padding-top: 52px; }
+    .post-body p { font-size: 17px; line-height: 1.8; color: var(--adobe-light); margin-bottom: 28px; }
+    .post-body p:first-child { font-size: 19px; color: #d4c8b4; line-height: 1.75; }
+    .post-body h2 { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 700; color: #F2EDE4; letter-spacing: -0.02em; margin: 52px 0 16px; padding-top: 52px; border-top: 1px solid var(--border-dark); }
+    .post-body strong { color: #F2EDE4; font-weight: 500; }
+
+    .pullquote { border-left: 3px solid var(--amber); padding: 20px 28px; margin: 40px 0; background: rgba(200,107,24,0.05); border-radius: 0 6px 6px 0; }
+    .pullquote p { font-family: 'Outfit', sans-serif; font-size: 20px !important; font-weight: 700; color: #F2EDE4 !important; line-height: 1.4 !important; margin: 0 !important; letter-spacing: -0.01em; }
+
+    .post-divider { display: flex; align-items: center; gap: 16px; margin: 48px 0 40px; }
+    .post-divider-line { flex: 1; height: 1px; background: var(--border-dark); }
+    .post-divider-mark { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: var(--adobe); text-transform: uppercase; }
+
+    /* SIDEBAR */
+    .post-sidebar { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 24px; }
+    .sidebar-card { background: var(--charcoal-2); border: 1px solid var(--border-dark); border-radius: 8px; padding: 24px; }
+    .sidebar-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--adobe); margin-bottom: 14px; }
+    .sidebar-card p { font-size: 12px; color: var(--adobe-light); line-height: 1.65; margin-bottom: 16px; }
+    .sidebar-cta { display: block; text-align: center; background: var(--amber); color: #fff; padding: 10px 18px; font-size: 12px; font-family: 'DM Sans', sans-serif; letter-spacing: 0.04em; text-decoration: none; border-radius: 3px; transition: background 0.2s; }
+    .sidebar-cta:hover { background: var(--amber-glow); }
+
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .toc-list li a { font-size: 12px; color: var(--adobe); text-decoration: none; letter-spacing: 0.01em; display: flex; align-items: flex-start; gap: 8px; transition: color 0.2s; line-height: 1.4; }
+    .toc-list li a:hover { color: var(--amber); }
+    .toc-num { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(200,107,24,0.5); flex-shrink: 0; margin-top: 1px; }
+
+    .share-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .share-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border: 1px solid var(--border-dark); border-radius: 4px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--adobe); background: none; text-decoration: none; transition: border-color 0.2s, color 0.2s; white-space: nowrap; }
+    .share-btn:hover { border-color: rgba(200,107,24,0.4); color: var(--amber); }
+
+    .back-to-blog { display: inline-flex; align-items: center; gap: 8px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--adobe); text-decoration: none; transition: color 0.2s; }
+    .back-to-blog:hover { color: var(--amber); }
+
+    /* BOTTOM CTA */
+    .post-bottom-cta { background: var(--charcoal-2); border: 1px solid rgba(200,107,24,0.2); border-radius: 10px; padding: 48px; text-align: center; margin: 72px 0; position: relative; overflow: hidden; }
+    .post-bottom-cta::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(200,107,24,0.06), transparent 70%); pointer-events: none; }
+    .pbc-overline { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber); margin-bottom: 12px; }
+    .pbc-title { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 700; color: #F2EDE4; margin-bottom: 12px; letter-spacing: -0.02em; }
+    .pbc-body { font-size: 14px; color: var(--adobe-light); max-width: 440px; margin: 0 auto 28px; line-height: 1.65; }
+    .pbc-btn { background: var(--amber); color: #fff; padding: 13px 28px; font-size: 14px; font-family: 'DM Sans', sans-serif; text-decoration: none; display: inline-block; letter-spacing: 0.04em; border-radius: 2px; transition: background 0.2s; }
+    .pbc-btn:hover { background: var(--amber-glow); }
+
+    /* FOOTER */
+    footer { background: var(--charcoal); border-top: 1px solid var(--border-dark); padding: 40px 0; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+    .footer-copy { font-size: 11px; color: rgba(138,122,96,0.5); letter-spacing: 0.04em; }
+    .footer-links-row { display: flex; gap: 24px; }
+    .footer-links-row a { font-size: 12px; color: rgba(138,122,96,0.6); text-decoration: none; transition: color 0.2s; }
+    .footer-links-row a:hover { color: var(--parchment); }
+
+    /* MOBILE */
+    @media (max-width: 768px) {
+      .container { padding: 0 20px; }
+      nav { padding: 0 20px; position: fixed; width: 100%; }
+      .nav-hamburger { display: flex; }
+      .nav-links { display: none; flex-direction: column; position: fixed; top: 64px; left: 0; right: 0; background: rgba(13,12,9,0.98); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-dark); padding: 24px 20px 32px; gap: 0; z-index: 150; }
+      .nav-links.open { display: flex; }
+      .nav-links a { font-size: 16px; padding: 14px 0; border-bottom: 1px solid var(--border-dark); color: var(--parchment); }
+      .nav-links a:last-child { border-bottom: none; }
+      .btn-primary-nav { margin-top: 16px; text-align: center; padding: 14px 20px !important; font-size: 15px !important; border-bottom: none !important; }
+      .post-header { padding-top: 96px; }
+      .post-layout { grid-template-columns: 1fr; gap: 32px; padding: 48px 0 72px; }
+      .post-sidebar { position: static; }
+      .post-title { font-size: clamp(30px, 9vw, 46px); }
+      .post-body { padding-top: 0; }
+      .post-body p { font-size: 15px; }
+      .post-body p:first-child { font-size: 17px; }
+      .post-body h2 { font-size: 22px; }
+      .pullquote p { font-size: 18px !important; }
+      .post-bottom-cta { padding: 32px 24px; }
+      .phg-ring-1, .phg-ring-2, .phg-dots { display: none; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+
+    /* Mobile TOC - shown only on mobile, above article */
+    .mobile-toc { display: none; }
+    .sidebar-toc-card { display: block; }
+
+    @media (max-width: 768px) {
+      .mobile-toc { display: block; margin-bottom: 28px; }
+      .sidebar-toc-card { display: none; }
+    }
+
+    /* REVEAL */
+    .reveal-b { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1); }
+    .reveal-b.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <svg width="26" height="26" viewBox="0 0 80 80" fill="#C86B18" xmlns="http://www.w3.org/2000/svg">
+      <rect x="31" y="6" width="18" height="68" rx="5"/>
+      <rect x="5" y="26" width="15" height="48" rx="4"/>
+      <rect x="18" y="26" width="15" height="14"/>
+      <rect x="60" y="36" width="15" height="38" rx="4"/>
+      <rect x="47" y="36" width="15" height="14"/>
+    </svg>
+    <div class="nav-logo-text">
+      <span class="nav-logo-cacti">CACTI</span>
+      <span class="nav-logo-analytics">ANALYTICS</span>
+    </div>
+  </a>
+  <div class="nav-links" id="nav-links">
+    <a href="index.html#how-it-works">How It Works</a>
+    <a href="index.html#services">Services</a>
+    <a href="index.html#case-study">Results</a>
+    <a href="index.html#about">About</a>
+    <a href="blog.html" class="active">Blog</a>
+    <a href="index.html#cta-section" class="btn-primary-nav">Book a Call</a>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- POST HEADER -->
+<div class="post-header">
+  <div class="post-header-geo">
+    <div class="phg-ring phg-ring-1"></div>
+    <div class="phg-ring phg-ring-2"></div>
+    <div class="phg-dots"></div>
+  </div>
+  <div class="container">
+    <div class="post-breadcrumb">
+      <a href="blog.html">Field Notes</a>
+      <span class="post-breadcrumb-sep">/</span>
+      <span class="post-breadcrumb-current">Origin Story</span>
+    </div>
+    <div class="post-category">
+      <span class="post-cat-tag">Origin Story</span>
+      <span class="post-cat-dot"></span>
+      <span class="post-cat-date">April 2026</span>
+    </div>
+    <h1 class="post-title">Why I Started<br><span class="amber">Cacti Analytics</span></h1>
+    <div class="post-byline">
+      <div class="post-author-avatar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C86B18" stroke-width="1.6" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="post-author-info">
+        <div class="post-author-name">Ashton Delgado</div>
+        <div class="post-author-title">Founder, Cacti Analytics</div>
+      </div>
+      <span class="post-read-time">9 min read</span>
+    </div>
+  </div>
+</div>
+
+<!-- POST CONTENT -->
+<div class="container">
+    <!-- MOBILE TOC - visible on mobile only, above article -->
+    <div class="mobile-toc">
+      <div class="sidebar-card">
+        <div class="sidebar-label">In this post</div>
+        <ul class="toc-list">
+          <li><a href="#decision"><span class="toc-num">01</span>The Decision That Changed Everything</a></li>
+          <li><a href="#supply-chain"><span class="toc-num">02</span>Finding Supply Chain</a></li>
+          <li><a href="#gap"><span class="toc-num">03</span>The Gap I Couldn't Stop Seeing</a></li>
+          <li><a href="#why-cacti"><span class="toc-num">04</span>Why "Cacti"</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="post-layout">
+
+    <!-- MAIN BODY -->
+    <article class="post-body reveal-b">
+
+      <p>I grew up in Murrieta, California - a suburb in Southern California that sits right in that sweet spot between the mountains, the desert, and the coast. If you know it, you know it. If you don't, just picture sun-bleached sidewalks, open space, and kids who had no business being as free as we were.</p>
+
+      <p>I was one of those kids. Barefoot most of the time, outside all day, always in some sport or another. I played everything - football, soccer, basketball - the kind of childhood where your mom had to yell for you from the front porch because you'd been gone since breakfast and your phone went straight to voicemail. We didn't spend a lot of time overthinking things. We just went outside and figured it out.</p>
+
+      <p>My childhood built something in me that I didn't have a name for at the time. A comfort with not having a clear plan. A bias toward action. A belief that if you just get out there and move, things have a way of working themselves out.</p>
+
+      <div class="post-divider">
+        <div class="post-divider-line"></div>
+        <span class="post-divider-mark">The Decision</span>
+        <div class="post-divider-line"></div>
+      </div>
+
+      <h2 id="decision">The Decision That Changed Everything</h2>
+
+      <p>I had every intention of going to college straight out of high school. I started down that road - but then financial aid stopped coming in, and the road dead-ended real fast. I needed a new plan, and I needed one quickly.</p>
+
+      <p>So in 2019, I joined the military.</p>
+
+      <p>I went in as a Medic, which felt like a calling at the time. I've always been someone who wants to be useful, who wants to solve a real problem for a real person - and what's more real than helping someone in a medical crisis? It felt right. I was proud of it.</p>
+
+      <p>Then 2020 happened.</p>
+
+      <p>COVID changed everything for everyone. For me, it changed the trajectory of my entire career. I was in the thick of it as a Medic, watching the system respond to something it wasn't prepared for. It was a crash course in stress management - both from the human side of things, but also in supply chain stress, and what happens when the right things aren't in the right place at the right time. I learned a tremendous amount - about people, about pressure, about how organizations actually function when the stakes are real.</p>
+
+      <p>But it also made one thing clear: the medical field wasn't where I was supposed to land. That chapter taught me exactly what I needed to learn, and then it was done.</p>
+
+      <div class="post-divider">
+        <div class="post-divider-line"></div>
+        <span class="post-divider-mark">The Turn</span>
+        <div class="post-divider-line"></div>
+      </div>
+
+      <h2 id="supply-chain">Finding Supply Chain</h2>
+
+      <p>I stumbled into supply chain the way a lot of people find the things that actually fit them - by accident, and then all at once.</p>
+
+      <p>What I found was that supply chain management is, at its core, an endless series of puzzles. Why did this part cost more from this supplier than that one? Why is this lead time inconsistent? What's the hidden cost that everyone's pretending isn't there? Where's the bottleneck, and why has nobody fixed it? Every question leads to another question, and somewhere in that maze is an answer that actually solves a problem.</p>
+
+      <p>I was hooked immediately.</p>
+
+      <p>I started looking into schools. Michigan State came up as number one for supply chain. ASU was number two. Under normal circumstances, that would've been an easy call.</p>
+
+      <p>But here's the thing - I was stationed in Tacoma, Washington. Thirty minutes south of Seattle. And if you've spent any time in the Pacific Northwest, you know: it's beautiful, and it will absolutely drain the life out of a Southern California kid. Grey skies. Constant rain. The kind of overcast that settles in around October and doesn't leave until June.</p>
+
+      <div class="pullquote">
+        <p>I chose ASU. I chose the sun. I chose Arizona, and I have not questioned that decision for a single second.</p>
+      </div>
+
+      <div class="post-divider">
+        <div class="post-divider-line"></div>
+        <span class="post-divider-mark">The Gap</span>
+        <div class="post-divider-line"></div>
+      </div>
+
+      <h2 id="gap">The Gap I Couldn't Stop Seeing</h2>
+
+      <p>Everything that followed - the degree, the internships, the roles, the skills - it all moved in one direction, even when I couldn't see the destination clearly. I maintained course.</p>
+
+      <p>The more I worked in procurement and supply chain, the more I kept running into the same problem: the tools and the thinking that drive real competitive advantage in this space are mostly locked away inside large organizations. Enterprise companies have entire teams dedicated to spend analytics, supplier intelligence, and procurement strategy. They have dashboards that tell them exactly where their money is going and exactly where they're leaving value on the table.</p>
+
+      <p><strong>Smaller businesses don't have that. And a lot of them don't even know they should.</strong></p>
+
+      <p>That gap started to bother me. Not in an academic way - in a "this is obviously a real problem with an obvious solution" kind of way. The kind of thing where you see it once, then you can't unsee it. Procurement intelligence pays for itself. Spend visibility pays for itself. Knowing your total cost of ownership before you sign a contract, knowing which suppliers are quietly costing you more than they should, having someone in your corner who can look at what you're spending and tell you where the waste is - that stuff pays for itself, fast.</p>
+
+      <p>That's the kind of value that makes sense. And when something makes sense to me, I can talk about it all day - trust me, ask those closest to me. I can explain it, defend it, and believe wholeheartedly in my ability to deliver it, because it's not a sales pitch. It's just the truth.</p>
+
+      <p><strong>That's why Cacti Analytics exists.</strong></p>
+
+      <div class="post-divider">
+        <div class="post-divider-line"></div>
+        <span class="post-divider-mark">The Name</span>
+        <div class="post-divider-line"></div>
+      </div>
+
+      <h2 id="why-cacti">Why "Cacti"</h2>
+
+      <p>People ask about the name. It's worth explaining.</p>
+
+      <p>I'm an Arizona guy now. And the more time I've spent here, the more I've come to appreciate the cactus - not as a quirky symbol, but as a genuine philosophy.</p>
+
+      <p>A cactus doesn't need much. It's built to thrive in conditions that would take out almost anything else. It stores what it needs, uses resources efficiently, and doesn't ask for a perfect environment to do its job. It just grows - quietly, steadily, and with a kind of durability that sneaks up on you.</p>
+
+      <p>That's the kind of thinking I believe in. Lean. Efficient. Built for the long haul. Not flashy for the sake of it, but deeply effective when it counts.</p>
+
+      <p>And there's something else. The cactus has a reputation for being harsh, prickly, hard to approach. But if you know what you're looking at - if you actually understand it - you see something resilient, structured, and purposeful. Good procurement thinking is exactly that. It can seem technical or intimidating from the outside, but once it clicks, it's elegant. It just makes sense.</p>
+
+      <div class="pullquote">
+        <p>Cacti Analytics is the business I always knew I'd build eventually. It sits at the intersection of everything I care about: solving real problems, helping people compete, and doing work that pays for itself in plain, measurable ways.</p>
+      </div>
+
+      <p>I grew up barefoot in Southern California. I served my country. I got rained on in Tacoma. I found my puzzle.</p>
+
+      <p>Now I'm here.</p>
+
+    </article>
+
+    <!-- SIDEBAR -->
+    <aside class="post-sidebar reveal-b" style="transition-delay:0.15s;">
+
+      <!-- TOC -->
+      <div class="sidebar-card sidebar-toc-card">
+        <div class="sidebar-label">In this post</div>
+        <ul class="toc-list">
+          <li><a href="#decision"><span class="toc-num">01</span>The Decision That Changed Everything</a></li>
+          <li><a href="#supply-chain"><span class="toc-num">02</span>Finding Supply Chain</a></li>
+          <li><a href="#gap"><span class="toc-num">03</span>The Gap I Couldn't Stop Seeing</a></li>
+          <li><a href="#why-cacti"><span class="toc-num">04</span>Why "Cacti"</a></li>
+        </ul>
+      </div>
+
+      <!-- CTA -->
+      <div class="sidebar-card" style="border-color:rgba(200,107,24,0.2);">
+        <div class="sidebar-label">Ready to find your waste?</div>
+        <p>If any of this resonated, let's talk. A free 30-minute call is all it takes to know if we're a fit.</p>
+        <a href="https://calendly.com/hello-cactianalytics/discovery-call" target="_blank" class="sidebar-cta">Book a Free Call</a>
+      </div>
+
+      <!-- Share -->
+      <div class="sidebar-card">
+        <div class="sidebar-label">Share this post</div>
+        <div class="share-row">
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://cactianalytics.com/why-cacti.html" target="_blank" class="share-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+            LinkedIn
+          </a>
+          <a href="https://twitter.com/intent/tweet?text=Why I Started Cacti Analytics&url=https://cactianalytics.com/why-cacti.html" target="_blank" class="share-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            X / Twitter
+          </a>
+        </div>
+      </div>
+
+      <!-- Back -->
+      <a href="blog.html" class="back-to-blog">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Field Notes
+      </a>
+
+    </aside>
+  </div>
+
+  <!-- BOTTOM CTA -->
+  <div class="post-bottom-cta reveal-b">
+    <div class="pbc-overline">Cacti Analytics</div>
+    <div class="pbc-title">See what's hiding in your spend.</div>
+    <div class="pbc-body">Book a free 30-minute discovery call. We'll tell you exactly where businesses like yours are overpaying - no pitch, just the truth.</div>
+    <a href="https://calendly.com/hello-cactianalytics/discovery-call" target="_blank" class="pbc-btn">Book a Free Discovery Call</a>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-copy">&copy; 2026 Cacti Analytics LLC. All rights reserved.</span>
+      <div class="footer-links-row">
+        <a href="index.html">Home</a>
+        <a href="index.html#services">Services</a>
+        <a href="blog.html">Blog</a>
+        <a href="mailto:hello@cactianalytics.com">hello@cactianalytics.com</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.06 });
+    document.querySelectorAll('.reveal-b').forEach(el => obs.observe(el));
+  } else {
+    document.querySelectorAll('.reveal-b').forEach(el => el.classList.add('visible'));
+  }
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 40 ? 'rgba(13,12,9,0.97)' : 'rgba(13,12,9,0.92)';
+  });
+  const hamburger = document.getElementById('nav-hamburger');
+  const navLinks = document.getElementById('nav-links');
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('open');
+    navLinks.classList.toggle('open');
+  });
+  navLinks.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      navLinks.classList.remove('open');
+    });
+  });
+</script>
+</body>
+</html>
